@@ -80,13 +80,18 @@ function getBigramFrequency(text) {
 }
 
 function decryptCaesarCipher(text, shift) {
-    return text.split('').map(char => {
-        const charCode = char.charCodeAt(0);
-        if (charCode >= 1072 && charCode <= 1103) {
-            return String.fromCharCode(((charCode - 1072 + shift) % 32) + 1072);
+    const alphabetLength = alphabet.length;
+    let decryptedText = '';
+    for (let char of text) {
+        const index = alphabet.indexOf(char);
+        if (index !== -1) {
+            const decryptedIndex = (index - shift + alphabetLength) % alphabetLength;
+            decryptedText += alphabet[decryptedIndex];
+        } else {
+            decryptedText += char;
         }
-        return char;
-    }).join('');
+    }
+    return decryptedText;
 }
 
 function caesarEncrypt(text, shift){
@@ -103,24 +108,32 @@ function analyzeText() {
     document.getElementById('decryptedText').innerHTML = ''; 
     const encryptedText = document.getElementById('encryptedText').value.trim();
     const cleanedText = cleanText(encryptedText);
-    console.log(getKeyLength(encryptedText));
-    const charFrequency = getCharacterFrequency(cleanedText);
-    const bigramFrequency = getBigramFrequency(cleanedText);
-    let bestDecryptedText = '';
-    let bestShift = 0;
     let maxMatch = 0;
+    let shifts = {};
     for (let shift = 1; shift <= 32; shift++) {
         const decryptedText = decryptCaesarCipher(cleanedText, shift);
         const charMatch = compareFrequencies(decryptedText);
         if (charMatch > maxMatch) {
+            shifts[shift] = charMatch;
             maxMatch = charMatch;
-            bestDecryptedText = decryptedText;
-            bestShift = shift;
         }
     }
-
-    document.getElementById('decryptedText').innerText = `Best Shift: ${bestShift}\nDecrypted Text:\n${bestDecryptedText}`;
+    let entries = Object.entries(shifts);
+    entries.sort((a, b) => a[1] - b[1]);
+    shifts = Object.fromEntries(entries);
+    console.log(shifts);
+    for (let shift of Object.keys(shifts).reverse()) {
+        let resultDiv = document.createElement('div');
+        let keyParagraph = document.createElement('p');
+        keyParagraph.innerText = `Сдвиг: ${shift}`;
+        let decryptedTextParagraph = document.createElement('p');
+        decryptedTextParagraph.innerText = `Расшифрованный текст:\n${decryptCaesarCipher(encryptedText, shift)}`;
+        resultDiv.appendChild(keyParagraph);
+        resultDiv.appendChild(decryptedTextParagraph);
+        document.getElementById('decryptedText').appendChild(resultDiv);
+    }
 }
+
 function compareFrequencies(decryptedText) {
     const freq = getCharacterFrequency(decryptedText);
     let matchScore = 0;
@@ -132,7 +145,6 @@ function compareFrequencies(decryptedText) {
             matchScore += Math.abs(expectedFreq - observedFreq);
         }
     }
-
     return 1 - matchScore;
 }
 
