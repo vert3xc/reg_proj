@@ -1,5 +1,23 @@
-<html>
-    <head>
-        <script defer type="module" src="./freq_anal.js"></script>
-    </head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frequency Analysis Decryption</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        input, textarea { width: 100%; margin: 10px 0; }
+        button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <h1>Frequency Analysis Decryption</h1>
+    <textarea id="encryptedText" rows="10" placeholder="Enter encrypted Russian text here..."></textarea>
+    <button onclick="breakVigenere()">Analyze and Decrypt</button>
+    <h2>Decrypted Text</h2>
+    <pre id="decryptedText"></pre>
+
+    <script src="freq_anal.js"></script>
+</body>
 </html>
