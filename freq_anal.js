@@ -58,12 +58,10 @@ function getKeyLength(text){
     return key_len;
 }
 
-// Function to clean the input text (remove non-Russian letters, convert to lowercase)
 function cleanText(text) {
     return text.replace(/[^а-яё]/gi, '').toLowerCase();
 }
 
-// Function to perform frequency analysis (character frequencies)
 function getCharacterFrequency(text) {
     const freq = {};
     for (let char of text) {
@@ -72,7 +70,6 @@ function getCharacterFrequency(text) {
     return freq;
 }
 
-// Function to perform bigram frequency analysis
 function getBigramFrequency(text) {
     const bigrams = {};
     for (let i = 0; i < text.length - 1; i++) {
@@ -82,43 +79,36 @@ function getBigramFrequency(text) {
     return bigrams;
 }
 
-// Function to decrypt using a simple Caesar Cipher
 function decryptCaesarCipher(text, shift) {
     return text.split('').map(char => {
         const charCode = char.charCodeAt(0);
-        if (charCode >= 1072 && charCode <= 1103) { // Russian lowercase letters range
+        if (charCode >= 1072 && charCode <= 1103) {
             return String.fromCharCode(((charCode - 1072 + shift) % 32) + 1072);
         }
-        return char; // non-alphabetical chars remain unchanged
+        return char;
     }).join('');
 }
 
 function caesarEncrypt(text, shift){
     return text.split('').map(char => {
         const charCode = char.charCodeAt(0);
-        if (charCode >= 1072 && charCode <= 1103) { // Russian lowercase letters range
+        if (charCode >= 1072 && charCode <= 1103) {
             return String.fromCharCode(((charCode - 1072 + shift) % 32) + 1072);
         }
-        return char; // non-alphabetical chars remain unchanged
+        return char;
     }).join('');
 }
 
-// Analyze text by performing frequency analysis and decrypting
 function analyzeText() {
+    document.getElementById('decryptedText').innerHTML = ''; 
     const encryptedText = document.getElementById('encryptedText').value.trim();
     const cleanedText = cleanText(encryptedText);
     console.log(getKeyLength(encryptedText));
-
-    // Frequency analysis
     const charFrequency = getCharacterFrequency(cleanedText);
     const bigramFrequency = getBigramFrequency(cleanedText);
-
-    // Decrypting the text using Caesar Cipher (testing different shifts)
     let bestDecryptedText = '';
     let bestShift = 0;
     let maxMatch = 0;
-
-    // Try different Caesar cipher shifts (1 to 32 for Russian alphabet)
     for (let shift = 1; shift <= 32; shift++) {
         const decryptedText = decryptCaesarCipher(cleanedText, shift);
         const charMatch = compareFrequencies(decryptedText);
@@ -131,8 +121,6 @@ function analyzeText() {
 
     document.getElementById('decryptedText').innerText = `Best Shift: ${bestShift}\nDecrypted Text:\n${bestDecryptedText}`;
 }
-
-// Compare the frequency of characters in the decrypted text to Russian letter frequency
 function compareFrequencies(decryptedText) {
     const freq = getCharacterFrequency(decryptedText);
     let matchScore = 0;
@@ -145,20 +133,35 @@ function compareFrequencies(decryptedText) {
         }
     }
 
-    return 1 - matchScore; // Return a score based on how closely it matches Russian frequencies
+    return 1 - matchScore;
 }
 
-function vigenereDecrypt(text, key){
-    let n = text.length;
-    let m = key.length;
-    let decryptedText = '';
-    for (let i = 0; i < n; i++){
-        let charCode = text.charCodeAt(i) - key.charCodeAt(i % m);
-        if (charCode < 0){
-            charCode += 32;
+function vigenereDecrypt(cipherText, key) {
+    const alphabetLength = alphabet.length;
+
+    let normalizedKey = '';
+    for (let i = 0, j = 0; i < cipherText.length; i++) {
+        if (alphabet.includes(cipherText[i].toLowerCase())) {
+            normalizedKey += key[j % key.length].toLowerCase();
+            j++;
+        } else {
+            normalizedKey += cipherText[i];
         }
-        decryptedText += String.fromCharCode(charCode + 1072);
     }
+
+    let decryptedText = '';
+    for (let i = 0; i < cipherText.length; i++) {
+        const char = cipherText[i].toLowerCase();
+        if (alphabet.includes(char)) {
+            const charIndex = alphabet.indexOf(char);
+            const keyIndex = alphabet.indexOf(normalizedKey[i]);
+            const decryptedIndex = (charIndex - keyIndex + alphabetLength) % alphabetLength;
+            decryptedText += alphabet[decryptedIndex];
+        } else {
+            decryptedText += char;
+        }
+    }
+
     return decryptedText;
 }
 
@@ -174,7 +177,48 @@ function splitBlocks(text, key_len){
     return blocks;
 }
 
+function solveSystem(indeces, k){
+    let shifts = {0: 0,};
+    let known_values = [0];
+    for(let i = 0; i < 3; i++){
+        for (let index of indeces){
+            if (known_values.includes(parseInt(index[1])) && !known_values.includes(parseInt(index[2]))){
+                shifts[parseInt(index[2])] = parseInt(shifts[index[1]]) + parseInt(index[3]);
+                known_values.push(parseInt(index[2]));
+            }
+        }
+    }
+    let final_shifts = {};
+    for (let i = 0; i < k; i++){
+        if (Object.keys(shifts).includes(i.toString())){
+            final_shifts[i] = 32 - shifts[i];
+        }else{
+            final_shifts[i] = -1;
+        }
+    }
+    return final_shifts;
+}
+
+function constructKeys(shifts, k){
+    let keys = [];
+    for (let i of alphabet) {
+        let key = '';
+        key += i;
+        for (let j = 1; j < k; j++) { 
+            if (Object.keys(shifts).includes(j.toString())) {
+                let shift = parseInt(shifts[j]);
+                key += caesarEncrypt(i, shift);
+            } else {
+                continue;
+            }
+        }
+        keys.push(key);
+    }
+    return [keys, k - (Object.values(shifts).filter(x => x === -1).length)];
+}
+
 function breakVigenere() {
+    document.getElementById('decryptedText').innerHTML = ''; 
     const encryptedText = document.getElementById('encryptedText').value.trim();
     const ct = cleanText(encryptedText);
     let key_lens = getKeyLength(ct);
@@ -183,7 +227,7 @@ function breakVigenere() {
     for (let k of key_lens) {
         let blocks = splitBlocks(ct, k);
         let indeces = [];
-        console.log(`Processing key length: ${k}`);
+        console.log(`Проверяю длину ключа: ${k}`);
         for (let i = 0; i < blocks.length; ++i) {
             for (let j = 0; j < blocks.length; ++j) {
                 if ((blocks[i] !== undefined && blocks[j] !== undefined) && i !== j) {
@@ -196,6 +240,18 @@ function breakVigenere() {
                 }
             }
         }
-        console.log('Indices:', indeces);
+        console.log(solveSystem(indeces, k));
+        let keys = constructKeys(solveSystem(indeces, k), k);
+        console.log('Ключи:', keys);
+        for (let key of keys[0]) {
+            let resultDiv = document.createElement('div');
+            let keyParagraph = document.createElement('p');
+            keyParagraph.innerText = `Ключ: ${key}`;
+            let decryptedTextParagraph = document.createElement('p');
+            decryptedTextParagraph.innerText = `Расшифрованный текст:\n${vigenereDecrypt(encryptedText, key)}`;
+            resultDiv.appendChild(keyParagraph);
+            resultDiv.appendChild(decryptedTextParagraph);
+            document.getElementById('decryptedText').appendChild(resultDiv);
+        }
     }
 }
