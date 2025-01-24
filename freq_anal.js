@@ -37,7 +37,7 @@ function MutIndCo(text1, text2){
 function getKeyLength(text){
     let n = text.length;
     let key_lens = {};
-    for (let i = 1; i <= 10; i++){
+    for (let i = 1; i <= 12; i++){
         let sum = 0;
         for (let j = 0; j < i; j++){
             let new_text = '';
