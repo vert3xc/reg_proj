@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frequency Analysis Decryption</title>
+    <title>Статистическая расшифровка</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
         input, textarea { width: 100%; margin: 10px 0; }
@@ -12,11 +12,10 @@
     </style>
 </head>
 <body>
-    <h1>Frequency Analysis Decryption</h1>
-    <textarea id="encryptedText" rows="10" placeholder="Enter encrypted Russian text here..."></textarea>
-    <button onclick="analyzeText()">Analyze and Decrypt</button>
-    <button onclick="breakVigenere()">Виженер?</button>
-    <h2>Decrypted Text</h2>
+    <h1>Статистическая расшифровка</h1>
+    <textarea id="encryptedText" rows="10" placeholder="Введите зашифрованный русский текст сюда"></textarea>
+    <button onclick="analyzeText()">Расшифровать</button>
+    <h2>Расшифрованный текст</h2>
     <pre id="decryptedText"></pre>
 
     <script src="freq_anal.js"></script>

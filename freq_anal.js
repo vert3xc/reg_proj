@@ -1,61 +1,56 @@
 const russianLetterFrequency = {
-    'а': 0.0801,    'б': 0.0159,    'в': 0.0454,    'г': 0.0170,    'д': 0.0298,    'е': 0.0845,    'ё': 0.0004,
-    'ж': 0.0094,    'з': 0.0165,    'и': 0.0735,    'й': 0.0121,    'к': 0.0349,    'л': 0.0440,    'м': 0.0321,
-    'н': 0.0670,    'о': 0.1097,    'п': 0.0281,    'р': 0.0473,    'с': 0.0547,    'т': 0.0626,    'у': 0.0262,
-    'ф': 0.0026,    'х': 0.0097,    'ц': 0.0048,    'ч': 0.0144,    'ш': 0.0073,    'щ': 0.0036,    'ъ': 0.0004,
-    'ы': 0.0190,    'ь': 0.0174,    'э': 0.0032,    'ю': 0.0064,    'я': 0.0201
+    'а': 0.0801, 'б': 0.0159, 'в': 0.0454, 'г': 0.0170, 'д': 0.0298, 'е': 0.0845, 'ё': 0.0004,
+    'ж': 0.0094, 'з': 0.0165, 'и': 0.0735, 'й': 0.0121, 'к': 0.0349, 'л': 0.0440, 'м': 0.0321,
+    'н': 0.0670, 'о': 0.1097, 'п': 0.0281, 'р': 0.0473, 'с': 0.0547, 'т': 0.0626, 'у': 0.0262,
+    'ф': 0.0026, 'х': 0.0097, 'ц': 0.0048, 'ч': 0.0144, 'ш': 0.0073, 'щ': 0.0036, 'ъ': 0.0004,
+    'ы': 0.0190, 'ь': 0.0174, 'э': 0.0032, 'ю': 0.0064, 'я': 0.0201
 };
 
-const russian_conicidence_index = 0.0557;
-const random_conicidence_index = 0.0312;
+const russianCoincidenceIndex = 0.0557;
+const randomCoincidenceIndex = 0.0312;
 const alphabet = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
 
-function IndCo(text){
-    let n = text.length;
-    let freq = getCharacterFrequency(text);
+function indexOfCoincidence(text) {
+    const n = text.length;
+    const freq = getCharacterFrequency(text);
     let sum = 0;
-    for (let i in freq){
-        sum += freq[i] * (freq[i] - 1);
+    for (let char in freq) {
+        sum += freq[char] * (freq[char] - 1);
     }
     return sum / (n * (n - 1));
 }
 
-function MutIndCo(text1, text2){
-    let n = text1.length;
-    let m = text2.length;
-    let freq1 = getCharacterFrequency(text1);
-    let freq2 = getCharacterFrequency(text2);
+function mutualIndexOfCoincidence(text1, text2) {
+    const n = text1.length;
+    const m = text2.length;
+    const freq1 = getCharacterFrequency(text1);
+    const freq2 = getCharacterFrequency(text2);
     let sum = 0;
-    for (let i = 0; i < 32; i++){
-        if (alphabet[i] in freq1 && alphabet[i] in freq2){
-            sum += freq1[alphabet[i]] * freq2[alphabet[i]];
+    for (let char of alphabet) {
+        if (freq1[char] && freq2[char]) {
+            sum += freq1[char] * freq2[char];
         }
     }
     return sum / (n * m);
 }
 
-function getKeyLength(text){
-    let n = text.length;
-    let key_lens = {};
-    for (let i = 1; i <= 12; i++){
+function getKeyLength(text) {
+    const n = text.length;
+    const keyLengths = {};
+    for (let i = 1; i <= 12; i++) {
         let sum = 0;
-        for (let j = 0; j < i; j++){
-            let new_text = '';
-            for (let k = j; k < n; k += i){
-                new_text += text[k];
+        for (let j = 0; j < i; j++) {
+            let newText = '';
+            for (let k = j; k < n; k += i) {
+                newText += text[k];
             }
-            sum += IndCo(new_text);
+            sum += indexOfCoincidence(newText);
         }
-        let diff = Math.abs(sum / i - russian_conicidence_index);
-        key_lens[i] = diff;
+        const diff = Math.abs(sum / i - russianCoincidenceIndex);
+        keyLengths[i] = diff;
     }
-    let keyLengthArray = Object.entries(key_lens);
-    keyLengthArray.sort((a, b) => a[1] - b[1]);
-    let key_len = keyLengthArray.slice(0, 3).map(x => x[0]);
-    for (let i = 0; i < key_len.length; i++){
-        key_len[i] = parseInt(key_len[i]);
-    }
-    return key_len;
+    const keyLengthArray = Object.entries(keyLengths).sort((a, b) => a[1] - b[1]);
+    return keyLengthArray.slice(0, 3).map(x => parseInt(x[0]));
 }
 
 function cleanText(text) {
@@ -70,74 +65,58 @@ function getCharacterFrequency(text) {
     return freq;
 }
 
-function getBigramFrequency(text) {
-    const bigrams = {};
-    for (let i = 0; i < text.length - 1; i++) {
-        let bigram = text.slice(i, i + 2);
-        bigrams[bigram] = (bigrams[bigram] || 0) + 1;
-    }
-    return bigrams;
-}
-
-function decryptCaesarCipher(text, shift) {
+function caesarCipher(text, shift, decrypt = false) {
     const alphabetLength = alphabet.length;
-    let decryptedText = '';
-    for (let char of text) {
+    return text.split('').map(char => {
         const index = alphabet.indexOf(char);
         if (index !== -1) {
-            const decryptedIndex = (index - shift + alphabetLength) % alphabetLength;
-            decryptedText += alphabet[decryptedIndex];
-        } else {
-            decryptedText += char;
-        }
-    }
-    return decryptedText;
-}
-
-function caesarEncrypt(text, shift){
-    return text.split('').map(char => {
-        const charCode = char.charCodeAt(0);
-        if (charCode >= 1072 && charCode <= 1103) {
-            return String.fromCharCode(((charCode - 1072 + shift) % 32) + 1072);
+            const newIndex = (index + (decrypt ? -shift : shift) + alphabetLength) % alphabetLength;
+            return alphabet[newIndex];
         }
         return char;
     }).join('');
 }
 
-function analyzeText() {
-    document.getElementById('decryptedText').innerHTML = ''; 
-    const encryptedText = document.getElementById('encryptedText').value.trim();
-    const cleanedText = cleanText(encryptedText);
-    let maxMatch = 0;
-    let shifts = {};
+function decryptSubstitutionCipher(cipherText, mapping) {
+    return cipherText.split('').map(char => {
+        return mapping[char] || char;
+    }).join('');
+}
+
+function trySubstitutionCipher(text) {
+    const results = [];
+    const mapping = breakSubstitutionCipher(text);
+    const decryptedText = decryptSubstitutionCipher(text, mapping);
+    const confidence = compareFrequencies(decryptedText);
+
+    results.push({
+        method: 'Подстановки',
+        key: JSON.stringify(mapping),
+        decryptedText: decryptedText,
+        confidence: confidence,
+    });
+
+    return results;
+}
+
+function tryCaesarCipher(text) {
+    let results = [];
     for (let shift = 1; shift <= 32; shift++) {
-        const decryptedText = decryptCaesarCipher(cleanedText, shift);
-        const charMatch = compareFrequencies(decryptedText);
-        if (charMatch > maxMatch) {
-            shifts[shift] = charMatch;
-            maxMatch = charMatch;
-        }
+        let decryptedText = caesarCipher(text, shift, true);
+        let confidence = compareFrequencies(decryptedText);
+        results.push({
+            method: 'Цезарь',
+            key: shift,
+            decryptedText: decryptedText,
+            confidence: confidence,
+        });
     }
-    let entries = Object.entries(shifts);
-    entries.sort((a, b) => a[1] - b[1]);
-    shifts = Object.fromEntries(entries);
-    console.log(shifts);
-    for (let shift of Object.keys(shifts).reverse()) {
-        let resultDiv = document.createElement('div');
-        let keyParagraph = document.createElement('p');
-        keyParagraph.innerText = `Сдвиг: ${shift}`;
-        let decryptedTextParagraph = document.createElement('p');
-        decryptedTextParagraph.innerText = `Расшифрованный текст:\n${decryptCaesarCipher(encryptedText, shift)}`;
-        resultDiv.appendChild(keyParagraph);
-        resultDiv.appendChild(decryptedTextParagraph);
-        document.getElementById('decryptedText').appendChild(resultDiv);
-    }
+    return results;
 }
 
 function compareFrequencies(decryptedText) {
     const freq = getCharacterFrequency(decryptedText);
     let matchScore = 0;
-
     for (let letter in freq) {
         if (russianLetterFrequency[letter]) {
             const expectedFreq = russianLetterFrequency[letter];
@@ -150,7 +129,6 @@ function compareFrequencies(decryptedText) {
 
 function vigenereDecrypt(cipherText, key) {
     const alphabetLength = alphabet.length;
-
     let normalizedKey = '';
     for (let i = 0, j = 0; i < cipherText.length; i++) {
         if (alphabet.includes(cipherText[i].toLowerCase())) {
@@ -160,110 +138,121 @@ function vigenereDecrypt(cipherText, key) {
             normalizedKey += cipherText[i];
         }
     }
-
     let decryptedText = '';
     for (let i = 0; i < cipherText.length; i++) {
-        const char = cipherText[i].toLowerCase();
+        let char = cipherText[i].toLowerCase();
         if (alphabet.includes(char)) {
-            const charIndex = alphabet.indexOf(char);
-            const keyIndex = alphabet.indexOf(normalizedKey[i]);
-            const decryptedIndex = (charIndex - keyIndex + alphabetLength) % alphabetLength;
+            let charIndex = alphabet.indexOf(char);
+            let keyIndex = alphabet.indexOf(normalizedKey[i]);
+            let decryptedIndex = (charIndex - keyIndex + alphabetLength) % alphabetLength;
             decryptedText += alphabet[decryptedIndex];
         } else {
             decryptedText += char;
         }
     }
-
     return decryptedText;
 }
 
-function splitBlocks(text, key_len){
-    let blocks = [];
-    for (let i = 0; i < key_len; i++){
-        let block = '';
-        for (let j = i; j < text.length; j += key_len){
-            block += text[j];
-        }
-        blocks.push(block);
+function splitBlocks(text, keyLength) {
+    const blocks = Array.from({ length: keyLength }, () => '');
+    for (let i = 0; i < text.length; i++) {
+        blocks[i % keyLength] += text[i];
     }
     return blocks;
 }
 
-function solveSystem(indeces, k){
-    let shifts = {0: 0,};
-    let known_values = [0];
-    for(let i = 0; i < 3; i++){
-        for (let index of indeces){
-            if (known_values.includes(parseInt(index[1])) && !known_values.includes(parseInt(index[2]))){
-                shifts[parseInt(index[2])] = parseInt(shifts[index[1]]) + parseInt(index[3]);
-                known_values.push(parseInt(index[2]));
+function solveSystem(indices, k) {
+    const shifts = { 0: 0 };
+    const knownValues = [0];
+    for (let i = 0; i < 3; i++) {
+        for (let index of indices) {
+            if (knownValues.includes(index[1]) && !knownValues.includes(index[2])) {
+                shifts[index[2]] = shifts[index[1]] + index[3];
+                knownValues.push(index[2]);
             }
         }
     }
-    let final_shifts = {};
-    for (let i = 0; i < k; i++){
-        if (Object.keys(shifts).includes(i.toString())){
-            final_shifts[i] = 32 - shifts[i];
-        }else{
-            final_shifts[i] = -1;
-        }
+    const finalShifts = {};
+    for (let i = 0; i < k; i++) {
+        finalShifts[i] = shifts[i] !== undefined ? 32 - shifts[i] : -1;
     }
-    return final_shifts;
+    return finalShifts;
 }
 
-function constructKeys(shifts, k){
-    let keys = [];
-    for (let i of alphabet) {
-        let key = '';
-        key += i;
-        for (let j = 1; j < k; j++) { 
-            if (Object.keys(shifts).includes(j.toString())) {
-                let shift = parseInt(shifts[j]);
-                key += caesarEncrypt(i, shift);
+function constructKeys(shifts, k) {
+    const keys = [];
+    for (let char of alphabet) {
+        let key = char;
+        for (let j = 1; j < k; j++) {
+            if (shifts[j] !== -1) {
+                key += caesarCipher(char, shifts[j]);
             } else {
                 continue;
             }
         }
         keys.push(key);
     }
-    return [keys, k - (Object.values(shifts).filter(x => x === -1).length)];
+    return [keys, k - Object.values(shifts).filter(x => x === -1).length];
 }
 
-function breakVigenere() {
-    document.getElementById('decryptedText').innerHTML = ''; 
-    const encryptedText = document.getElementById('encryptedText').value.trim();
-    const ct = cleanText(encryptedText);
-    let key_lens = getKeyLength(ct);
-    console.log('Key lengths:', key_lens);
-    let n = ct.length;
-    for (let k of key_lens) {
-        let blocks = splitBlocks(ct, k);
-        let indeces = [];
-        console.log(`Проверяю длину ключа: ${k}`);
-        for (let i = 0; i < blocks.length; ++i) {
-            for (let j = 0; j < blocks.length; ++j) {
-                if ((blocks[i] !== undefined && blocks[j] !== undefined) && i !== j) {
-                    for (let shift = 0; shift < 32; ++shift) {
-                        let index = MutIndCo(blocks[i], caesarEncrypt(blocks[j], shift));
-                        if (index > 0.05){
-                            indeces.push([index, i, j, shift]);
+
+function tryVigenereCipher(text) {
+    let results = [];
+    let keyLengths = getKeyLength(text);
+
+    for (let k of keyLengths) {
+        let blocks = splitBlocks(text, k);
+        let indices = [];
+        for (let i = 0; i < blocks.length; i++) {
+            for (let j = 0; j < blocks.length; j++) {
+                if (i !== j) {
+                    for (let shift = 0; shift < 32; shift++) {
+                        let index = mutualIndexOfCoincidence(blocks[i], caesarCipher(blocks[j], shift));
+                        if (index > 0.05) {
+                            indices.push([index, i, j, shift]);
                         }
                     }
                 }
             }
         }
-        console.log(solveSystem(indeces, k));
-        let keys = constructKeys(solveSystem(indeces, k), k);
-        console.log('Ключи:', keys);
-        for (let key of keys[0]) {
-            let resultDiv = document.createElement('div');
-            let keyParagraph = document.createElement('p');
-            keyParagraph.innerText = `Ключ: ${key}`;
-            let decryptedTextParagraph = document.createElement('p');
-            decryptedTextParagraph.innerText = `Расшифрованный текст:\n${vigenereDecrypt(encryptedText, key)}`;
-            resultDiv.appendChild(keyParagraph);
-            resultDiv.appendChild(decryptedTextParagraph);
-            document.getElementById('decryptedText').appendChild(resultDiv);
+        let shifts = solveSystem(indices, k);
+        let [keys] = constructKeys(shifts, k);
+
+        for (let key of keys) {
+            let decryptedText = vigenereDecrypt(text, key);
+            let confidence = compareFrequencies(decryptedText);
+            results.push({
+                method: 'Виженер',
+                key: key,
+                decryptedText: decryptedText,
+                confidence: confidence,
+            });
         }
+    }
+    return results;
+}
+
+function analyzeText() {
+    document.getElementById('decryptedText').innerHTML = '';
+    let encryptedText = document.getElementById('encryptedText').value.trim();
+    let cleanedText = cleanText(encryptedText);
+    let results = [];
+    let caesarResults = tryCaesarCipher(cleanedText);
+    results.push(...caesarResults);
+    let vigenereResults = tryVigenereCipher(cleanedText);
+    results.push(...vigenereResults);
+    results.sort((a, b) => b.confidence - a.confidence);
+    for (let result of results) {
+        let resultDiv = document.createElement('div');
+        let methodParagraph = document.createElement('p');
+        methodParagraph.innerText = `Метод: ${result.method}`;
+        let keyParagraph = document.createElement('p');
+        keyParagraph.innerText = `Ключ: ${result.key}`;
+        let decryptedTextParagraph = document.createElement('p');
+        decryptedTextParagraph.innerText = `Расшифрованный текст:\n${result.decryptedText}`;
+        resultDiv.appendChild(methodParagraph);
+        resultDiv.appendChild(keyParagraph);
+        resultDiv.appendChild(decryptedTextParagraph);
+        document.getElementById('decryptedText').appendChild(resultDiv);
     }
 }
