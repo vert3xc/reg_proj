@@ -176,6 +176,32 @@ function constructKeys(shifts, k) {
     return [keys, k - Object.values(shifts).filter(x => x === -1).length];
 }
 
+function altVigenere(normalizedText, cleanedText){
+    let keyLengths = getKeyLength(cleanedText);
+    console.log(keyLengths);
+    let key = '';
+    for (let k of keyLengths) {
+        let blocks = splitBlocks(cleanedText, k);
+        for (let bl of blocks){
+            let results = tryCaesarCipher(bl, bl);
+            results.sort((a, b) => b.confidence - a.confidence);
+            const shift = results[0].key
+            key += alphabet[shift]
+        }
+    }
+    console.log(key);
+    let plain = vigenereDecrypt(normalizedText, key);
+    console.log(plain);
+    let confidence = compareFrequencies(plain);
+    let res = [{
+        method: "Виженер",
+        key: key, 
+        decryptedText: plain,
+        confidence: confidence,
+    }]
+    return res;
+}
+
 function tryVigenereCipher(normalizedText, cleanedText) {
     let results = [];
     let keyLengths = getKeyLength(cleanedText);
@@ -261,9 +287,10 @@ function analyzeText() {
     results.push(...vigenereResults);
     let substitutionResults = trySubstitutionCipher(normalizedText, cleanedText);
     results.push(...substitutionResults);
-
+    let altVigenereResults = altVigenere(normalizedText, cleanedText);
+    results.push(...altVigenereResults);
     results.sort((a, b) => b.confidence - a.confidence);
-    const topResults = results.slice(0, 5);
+    const topResults = results.slice(0, 10);
 
     for (let result of topResults) {
         let resultDiv = document.createElement('div');
