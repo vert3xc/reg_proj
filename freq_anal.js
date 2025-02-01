@@ -37,7 +37,7 @@ function mutualIndexOfCoincidence(text1, text2) {
 function getKeyLength(text) {
     const n = text.length;
     const keyLengths = {};
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= 15; i++) {
         let sum = 0;
         for (let j = 0; j < i; j++) {
             let newText = '';
@@ -68,7 +68,7 @@ function getCharacterFrequency(text) {
 function caesarCipher(text, shift, decrypt = false) {
     const alphabetLength = alphabet.length;
     return text.split('').map(char => {
-        const index = alphabet.indexOf(char);
+        const index = alphabet.indexOf(char.toLowerCase());
         if (index !== -1) {
             const newIndex = (index + (decrypt ? -shift : shift) + alphabetLength) % alphabetLength;
             return alphabet[newIndex];
@@ -79,38 +79,25 @@ function caesarCipher(text, shift, decrypt = false) {
 
 function decryptSubstitutionCipher(cipherText, mapping) {
     return cipherText.split('').map(char => {
-        return mapping[char] || char;
+        const lowerChar = char.toLowerCase();
+        return alphabet.includes(lowerChar) ? mapping[lowerChar] || char : char;
     }).join('');
 }
 
-function trySubstitutionCipher(text) {
+function trySubstitutionCipher(normalizedText, cleanedText) {
     const results = [];
-    const mapping = breakSubstitutionCipher(text);
-    const decryptedText = decryptSubstitutionCipher(text, mapping);
-    const confidence = compareFrequencies(decryptedText);
+    const mapping = breakSubstitutionCipher(cleanedText);
+    const decryptedNormalizedText = decryptSubstitutionCipher(normalizedText, mapping);
+    const decryptedCleanedText = cleanText(decryptedNormalizedText);
+    const confidence = compareFrequencies(decryptedCleanedText);
 
     results.push({
         method: 'Подстановки',
         key: JSON.stringify(mapping),
-        decryptedText: decryptedText,
+        decryptedText: decryptedNormalizedText,
         confidence: confidence,
     });
 
-    return results;
-}
-
-function tryCaesarCipher(text) {
-    let results = [];
-    for (let shift = 1; shift <= 32; shift++) {
-        let decryptedText = caesarCipher(text, shift, true);
-        let confidence = compareFrequencies(decryptedText);
-        results.push({
-            method: 'Цезарь',
-            key: shift,
-            decryptedText: decryptedText,
-            confidence: confidence,
-        });
-    }
     return results;
 }
 
@@ -129,23 +116,17 @@ function compareFrequencies(decryptedText) {
 
 function vigenereDecrypt(cipherText, key) {
     const alphabetLength = alphabet.length;
-    let normalizedKey = '';
-    for (let i = 0, j = 0; i < cipherText.length; i++) {
-        if (alphabet.includes(cipherText[i].toLowerCase())) {
-            normalizedKey += key[j % key.length].toLowerCase();
-            j++;
-        } else {
-            normalizedKey += cipherText[i];
-        }
-    }
     let decryptedText = '';
+    let keyIndex = 0;
     for (let i = 0; i < cipherText.length; i++) {
-        let char = cipherText[i].toLowerCase();
+        const char = cipherText[i].toLowerCase();
         if (alphabet.includes(char)) {
-            let charIndex = alphabet.indexOf(char);
-            let keyIndex = alphabet.indexOf(normalizedKey[i]);
-            let decryptedIndex = (charIndex - keyIndex + alphabetLength) % alphabetLength;
+            const keyChar = key[keyIndex % key.length].toLowerCase();
+            const charIndex = alphabet.indexOf(char);
+            const keyIndexInAlphabet = alphabet.indexOf(keyChar);
+            const decryptedIndex = (charIndex - keyIndexInAlphabet + alphabetLength) % alphabetLength;
             decryptedText += alphabet[decryptedIndex];
+            keyIndex++;
         } else {
             decryptedText += char;
         }
@@ -164,7 +145,7 @@ function splitBlocks(text, keyLength) {
 function solveSystem(indices, k) {
     const shifts = { 0: 0 };
     const knownValues = [0];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
         for (let index of indices) {
             if (knownValues.includes(index[1]) && !knownValues.includes(index[2])) {
                 shifts[index[2]] = shifts[index[1]] + index[3];
@@ -195,13 +176,12 @@ function constructKeys(shifts, k) {
     return [keys, k - Object.values(shifts).filter(x => x === -1).length];
 }
 
-
-function tryVigenereCipher(text) {
+function tryVigenereCipher(normalizedText, cleanedText) {
     let results = [];
-    let keyLengths = getKeyLength(text);
+    let keyLengths = getKeyLength(cleanedText);
 
     for (let k of keyLengths) {
-        let blocks = splitBlocks(text, k);
+        let blocks = splitBlocks(cleanedText, k);
         let indices = [];
         for (let i = 0; i < blocks.length; i++) {
             for (let j = 0; j < blocks.length; j++) {
@@ -219,12 +199,13 @@ function tryVigenereCipher(text) {
         let [keys] = constructKeys(shifts, k);
 
         for (let key of keys) {
-            let decryptedText = vigenereDecrypt(text, key);
-            let confidence = compareFrequencies(decryptedText);
+            let decryptedNormalizedText = vigenereDecrypt(normalizedText, key);
+            let decryptedCleanedText = cleanText(decryptedNormalizedText);
+            let confidence = compareFrequencies(decryptedCleanedText);
             results.push({
                 method: 'Виженер',
                 key: key,
-                decryptedText: decryptedText,
+                decryptedText: decryptedNormalizedText,
                 confidence: confidence,
             });
         }
@@ -232,26 +213,72 @@ function tryVigenereCipher(text) {
     return results;
 }
 
+function tryCaesarCipher(normalizedText, cleanedText) {
+    let results = [];
+    for (let shift = 1; shift <= 32; shift++) {
+        let decryptedNormalizedText = caesarCipher(normalizedText, shift, true);
+        let decryptedCleanedText = cleanText(decryptedNormalizedText);
+        let confidence = compareFrequencies(decryptedCleanedText);
+        results.push({
+            method: 'Цезарь',
+            key: shift,
+            decryptedText: decryptedNormalizedText,
+            confidence: confidence,
+        });
+    }
+    return results;
+}
+
+function breakSubstitutionCipher(text) {
+    const freq = getCharacterFrequency(text);
+    const sortedFreq = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+    const sortedRussian = Object.entries(russianLetterFrequency).sort((a, b) => b[1] - a[1]);
+
+    const mapping = {};
+    for (let i = 0; i < sortedFreq.length; i++) {
+        const cipherChar = sortedFreq[i][0];
+        const plainChar = sortedRussian[i][0];
+        mapping[cipherChar] = plainChar;
+    }
+    return mapping;
+}
+
 function analyzeText() {
     document.getElementById('decryptedText').innerHTML = '';
     let encryptedText = document.getElementById('encryptedText').value.trim();
-    let cleanedText = cleanText(encryptedText);
+    let normalizedText = encryptedText.toLowerCase();
+    let cleanedText = cleanText(normalizedText);
+
+    if (cleanedText.length === 0) {
+        alert('Пожалуйста, введите зашифрованный текст.');
+        return;
+    }
+
     let results = [];
-    let caesarResults = tryCaesarCipher(cleanedText);
+    let caesarResults = tryCaesarCipher(normalizedText, cleanedText);
     results.push(...caesarResults);
-    let vigenereResults = tryVigenereCipher(cleanedText);
+    let vigenereResults = tryVigenereCipher(normalizedText, cleanedText);
     results.push(...vigenereResults);
+    let substitutionResults = trySubstitutionCipher(normalizedText, cleanedText);
+    results.push(...substitutionResults);
+
     results.sort((a, b) => b.confidence - a.confidence);
-    for (let result of results) {
+    const topResults = results.slice(0, 5);
+
+    for (let result of topResults) {
         let resultDiv = document.createElement('div');
+        resultDiv.className = 'result';
         let methodParagraph = document.createElement('p');
-        methodParagraph.innerText = `Метод: ${result.method}`;
+        methodParagraph.innerHTML = `<strong>Метод:</strong> ${result.method}`;
         let keyParagraph = document.createElement('p');
-        keyParagraph.innerText = `Ключ: ${result.key}`;
+        keyParagraph.innerHTML = `<strong>Ключ:</strong> ${result.key}`;
+        let confidenceParagraph = document.createElement('p');
+        confidenceParagraph.innerHTML = `<strong>Уверенность:</strong> ${result.confidence.toFixed(4)}`;
         let decryptedTextParagraph = document.createElement('p');
-        decryptedTextParagraph.innerText = `Расшифрованный текст:\n${result.decryptedText}`;
+        decryptedTextParagraph.innerHTML = `<strong>Результат:</strong><br>${result.decryptedText}`;
         resultDiv.appendChild(methodParagraph);
         resultDiv.appendChild(keyParagraph);
+        resultDiv.appendChild(confidenceParagraph);
         resultDiv.appendChild(decryptedTextParagraph);
         document.getElementById('decryptedText').appendChild(resultDiv);
     }
