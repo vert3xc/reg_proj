@@ -37,7 +37,7 @@ function mutualIndexOfCoincidence(text1, text2) {
 function getKeyLength(text) {
     const n = text.length;
     const keyLengths = {};
-    for (let i = 1; i <= 15; i++) {
+    for (let i = 1; i <= 12; i++) {
         let sum = 0;
         for (let j = 0; j < i; j++) {
             let newText = '';
@@ -280,18 +280,21 @@ function analyzeText() {
         return;
     }
 
-    let results = [];
     let caesarResults = tryCaesarCipher(normalizedText, cleanedText);
-    results.push(...caesarResults);
     let vigenereResults = tryVigenereCipher(normalizedText, cleanedText);
-    results.push(...vigenereResults);
     let substitutionResults = trySubstitutionCipher(normalizedText, cleanedText);
-    results.push(...substitutionResults);
     let altVigenereResults = altVigenere(normalizedText, cleanedText);
-    results.push(...altVigenereResults);
-    results.sort((a, b) => b.confidence - a.confidence);
-    const topResults = results.slice(0, 10);
-
+    caesarResults.sort((a, b) => b.confidence - a.confidence);
+    vigenereResults.sort((a, b) => b.confidence - a.confidence);
+    substitutionResults.sort((a, b) => b.confidence - a.confidence);
+    altVigenereResults.sort((a, b) => b.confidence - a.confidence);
+    const topResults = [
+        ...vigenereResults.slice(0, 2),
+        ...altVigenereResults.slice(0, 2),
+        ...caesarResults.slice(0, 3),
+        ...substitutionResults.slice(0, 3)
+    ];
+    console.log(topResults);
     for (let result of topResults) {
         let resultDiv = document.createElement('div');
         resultDiv.className = 'result';
