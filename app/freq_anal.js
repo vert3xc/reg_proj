@@ -176,30 +176,29 @@ function constructKeys(shifts, k) {
     return [keys, k - Object.values(shifts).filter(x => x === -1).length];
 }
 
-function altVigenere(normalizedText, cleanedText){
+function altVigenere(normalizedText, cleanedText) {
     let keyLengths = getKeyLength(cleanedText);
-    console.log(keyLengths);
-    let key = '';
+    let results = [];
     for (let k of keyLengths) {
+        let key = '';
         let blocks = splitBlocks(cleanedText, k);
-        for (let bl of blocks){
-            let results = tryCaesarCipher(bl, bl);
-            results.sort((a, b) => b.confidence - a.confidence);
-            const shift = results[0].key
-            key += alphabet[shift]
+        for (let bl of blocks) {
+            let caesarResults = tryCaesarCipher(bl, bl);
+            caesarResults.sort((a, b) => b.confidence - a.confidence);
+            const shift = caesarResults[0].key;
+            key += alphabet[shift];
         }
+        let plain = vigenereDecrypt(normalizedText, key);
+        let decryptedCleaned = cleanText(plain);
+        let confidence = compareFrequencies(decryptedCleaned);
+        results.push({
+            method: "Виженер",
+            key: key,
+            decryptedText: plain,
+            confidence: confidence,
+        });
     }
-    console.log(key);
-    let plain = vigenereDecrypt(normalizedText, key);
-    console.log(plain);
-    let confidence = compareFrequencies(plain);
-    let res = [{
-        method: "Виженер",
-        key: key, 
-        decryptedText: plain,
-        confidence: confidence,
-    }]
-    return res;
+    return results;
 }
 
 function tryVigenereCipher(normalizedText, cleanedText) {
@@ -294,6 +293,7 @@ function analyzeText() {
         ...caesarResults.slice(0, 3),
         ...substitutionResults.slice(0, 3)
     ];
+    topResults.sort((a, b) => b.confidence - a.confidence);
     console.log(topResults);
     for (let result of topResults) {
         let resultDiv = document.createElement('div');
