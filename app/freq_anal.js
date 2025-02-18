@@ -270,31 +270,29 @@ function breakSubstitutionCipher(text) {
 
 function analyzeText() {
     document.getElementById('decryptedText').innerHTML = '';
-    let encryptedText = document.getElementById('encryptedText').value.trim();
-    let normalizedText = encryptedText.toLowerCase();
-    let cleanedText = cleanText(normalizedText);
+    const encryptedText = document.getElementById('encryptedText').value.trim();
+    const normalizedText = encryptedText.toLowerCase();
+    const cleanedText = cleanText(normalizedText);
 
-    if (cleanedText.length === 0) {
+    if (!cleanedText.length) {
         alert('Пожалуйста, введите зашифрованный текст.');
         return;
     }
-
-    let caesarResults = tryCaesarCipher(normalizedText, cleanedText);
-    let vigenereResults = tryVigenereCipher(normalizedText, cleanedText);
-    let substitutionResults = trySubstitutionCipher(normalizedText, cleanedText);
-    let altVigenereResults = altVigenere(normalizedText, cleanedText);
+    const caesarResults = tryCaesarCipher(normalizedText, cleanedText);
+    const vigenereResults = tryVigenereCipher(normalizedText, cleanedText);
+    const substitutionResults = trySubstitutionCipher(normalizedText, cleanedText);
+    const altVigenereResults = altVigenere(normalizedText, cleanedText);
     caesarResults.sort((a, b) => b.confidence - a.confidence);
     vigenereResults.sort((a, b) => b.confidence - a.confidence);
     substitutionResults.sort((a, b) => b.confidence - a.confidence);
     altVigenereResults.sort((a, b) => b.confidence - a.confidence);
+    const allVigenere = [...vigenereResults, ...altVigenereResults];
+    allVigenere.sort((a, b) => b.confidence - a.confidence);
     const topResults = [
-        ...vigenereResults.slice(0, 2),
-        ...altVigenereResults.slice(0, 2),
+        ...allVigenere.slice(0, 4),
         ...caesarResults.slice(0, 3),
         ...substitutionResults.slice(0, 3)
     ];
-    topResults.sort((a, b) => b.confidence - a.confidence);
-    console.log(topResults);
     for (let result of topResults) {
         let resultDiv = document.createElement('div');
         resultDiv.className = 'result';
