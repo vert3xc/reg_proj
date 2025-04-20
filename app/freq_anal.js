@@ -114,7 +114,7 @@ function compareFrequencies(decryptedText) {
     return 1 - matchScore;
 }
 
-function vigenereDecrypt(cipherText, key) {
+function vigenereDecrypt(cipherText, key, f=-1) {
     const alphabetLength = alphabet.length;
     let decryptedText = '';
     let keyIndex = 0;
@@ -124,7 +124,7 @@ function vigenereDecrypt(cipherText, key) {
             const keyChar = key[keyIndex % key.length].toLowerCase();
             const charIndex = alphabet.indexOf(char);
             const keyIndexInAlphabet = alphabet.indexOf(keyChar);
-            const decryptedIndex = (charIndex - keyIndexInAlphabet + alphabetLength) % alphabetLength;
+            const decryptedIndex = (charIndex + f * keyIndexInAlphabet + alphabetLength) % alphabetLength;
             decryptedText += alphabet[decryptedIndex];
             keyIndex++;
         } else {
