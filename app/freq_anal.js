@@ -114,7 +114,7 @@ function compareFrequencies(decryptedText) {
     return 1 - matchScore;
 }
 
-function vigenereDecrypt(cipherText, key, f=-1) {
+function vigenere(cipherText, key, f=-1) {
     const alphabetLength = alphabet.length;
     let decryptedText = '';
     let keyIndex = 0;
@@ -188,7 +188,7 @@ function altVigenere(normalizedText, cleanedText) {
             const shift = caesarResults[0].key;
             key += alphabet[shift];
         }
-        let plain = vigenereDecrypt(normalizedText, key);
+        let plain = vigenere(normalizedText, key);
         let decryptedCleaned = cleanText(plain);
         let confidence = compareFrequencies(decryptedCleaned);
         results.push({
@@ -224,7 +224,7 @@ function tryVigenereCipher(normalizedText, cleanedText) {
         let [keys] = constructKeys(shifts, k);
 
         for (let key of keys) {
-            let decryptedNormalizedText = vigenereDecrypt(normalizedText, key);
+            let decryptedNormalizedText = vigenere(normalizedText, key);
             let decryptedCleanedText = cleanText(decryptedNormalizedText);
             let confidence = compareFrequencies(decryptedCleanedText);
             results.push({
